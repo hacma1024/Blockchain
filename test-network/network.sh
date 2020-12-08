@@ -24,7 +24,7 @@ function printHelp() {
   echo "      "$'\e[0;32m'up$'\e[0m' - bring up fabric orderer and peer nodes. No channel is created
   echo "      "$'\e[0;32m'up createChannel$'\e[0m' - bring up fabric network with one channel
   echo "      "$'\e[0;32m'createChannel$'\e[0m' - create and join a channel after the network is created
-  echo "      "$'\e[0;32m'deployCC$'\e[0m' - deploy the asset transfer basic chaincode on the channel or specify
+  echo "      "$'\e[0;32m'deployCC$'\e[0m' - deploy the asset transfer iot chaincode on the channel or specify
   echo "      "$'\e[0;32m'down$'\e[0m' - clear the network with docker-compose down
   echo "      "$'\e[0;32m'restart$'\e[0m' - restart the network
   echo
@@ -40,7 +40,7 @@ function printHelp() {
   echo "    -verbose - verbose mode"
   echo "    Used with "$'\e[0;32m'network.sh deployCC$'\e[0m'
   echo "    -c <channel name> - deploy chaincode to channel"
-  echo "    -ccn <name> - the short name of the chaincode to deploy: basic (default),ledger, private, sbe, secured"
+  echo "    -ccn <name> - the short name of the chaincode to deploy: iot (default),ledger, private, sbe, secured"
   echo "    -ccl <language> - the programming language of the chaincode to deploy: go (default), java, javascript, typescript"
   echo "    -ccv <version>  - chaincode version. 1.0 (default)"
   echo "    -ccs <sequence>  - chaincode definition sequence. Must be an integer, 1 (default), 2, 3, etc"
@@ -63,7 +63,7 @@ function printHelp() {
   echo " Examples:"
   echo "   network.sh up createChannel -ca -c mychannel -s couchdb -i 2.0.0"
   echo "   network.sh createChannel -c channelName"
-  echo "   network.sh deployCC -ccn basic -ccl javascript"
+  echo "   network.sh deployCC -ccn iot -ccl javascript"
   echo "   network.sh deployCC -ccn mychaincode -ccp ./user/mychaincode -ccv 1 -ccl javascript"
 }
 
@@ -94,7 +94,7 @@ function removeUnwantedImages() {
 # Versions of fabric known not to work with the test network
 NONWORKING_VERSIONS="^1\.0\. ^1\.1\. ^1\.2\. ^1\.3\. ^1\.4\."
 
-# Do some basic sanity checking to make sure that the appropriate versions of fabric
+# Do some iot sanity checking to make sure that the appropriate versions of fabric
 # binaries/images are available. In the future, additional checking for the presence
 # of go or other items could be added.
 function checkPrereqs() {
@@ -256,7 +256,7 @@ function createOrgs() {
     echo "##### Generate certificates using Fabric CA's ############"
     echo "##########################################################"
 
-    IMAGE_TAG=${CA_IMAGETAG} docker-compose -f $COMPOSE_FILE_CA up -d 2>&1
+    # IMAGE_TAG=${CA_IMAGETAG} docker-compose -f $COMPOSE_FILE_CA up -d 2>&1
 
     . organizations/fabric-ca/registerEnroll.sh
 
@@ -441,8 +441,8 @@ MAX_RETRY=5
 CLI_DELAY=3
 # channel name defaults to "mychannel"
 CHANNEL_NAME="mychannel"
-# chaincode name defaults to "basic"
-CC_NAME="basic"
+# chaincode name defaults to "iot"
+CC_NAME="iot"
 # chaincode path defaults to "NA"
 CC_SRC_PATH="NA"
 # endorsement policy defaults to "NA". This would allow chaincodes to use the majority default policy.
@@ -469,9 +469,9 @@ CC_VERSION="1.0"
 # Chaincode definition sequence
 CC_SEQUENCE=1
 # default image tag
-IMAGETAG="latest"
+IMAGETAG=2.2.0
 # default ca image tag
-CA_IMAGETAG="latest"
+CA_IMAGETAG=1.4.7
 # default database
 DATABASE="leveldb"
 

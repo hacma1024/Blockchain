@@ -1,5 +1,5 @@
 CHANNEL_NAME=${1:-"mychannel"}
-CC_NAME=${2:-"basic"}
+CC_NAME=${2:-"iot"}
 CC_SRC_PATH=${3:-"NA"}
 CC_SRC_LANGUAGE=${4:-"go"}
 CC_VERSION=${5:-"1.0"}
@@ -37,9 +37,9 @@ if [ "$CC_SRC_PATH" = "NA" ]; then
 	echo Determining the path to the chaincode
 	# first see which chaincode we have. This will be based on the
 	# short name of the known chaincode sample
-	if [ "$CC_NAME" = "basic" ]; then
-		echo $'\e[0;32m'asset-transfer-basic$'\e[0m' chaincode
-		CC_SRC_PATH="../asset-transfer-basic"
+	if [ "$CC_NAME" = "iot" ]; then
+		echo $'\e[0;32m'asset-transfer-iot$'\e[0m' chaincode
+		CC_SRC_PATH="../asset-transfer-iot"
 	elif [ "$CC_NAME" = "secured" ]; then
 		echo $'\e[0;32m'asset-transfer-secured-agreeement$'\e[0m' chaincode
 		CC_SRC_PATH="../asset-transfer-secured-agreement"
@@ -54,7 +54,7 @@ if [ "$CC_SRC_PATH" = "NA" ]; then
 		CC_SRC_PATH="../asset-transfer-sbe"
 	else
 		echo The chaincode name ${CC_NAME} is not supported by this script
-		echo Supported chaincode names are: basic, ledger, private, sbe, secured
+		echo Supported chaincode names are: iot, ledger, private, sbe, secured
 		exit 1
 	fi
 
@@ -85,11 +85,11 @@ fi
 if [ "$CC_SRC_LANGUAGE" = "go" ]; then
 		CC_RUNTIME_LANGUAGE=golang
 
-	echo Vendoring Go dependencies at $CC_SRC_PATH
-	pushd $CC_SRC_PATH
-	GO111MODULE=on go mod vendor
-	popd
-	echo Finished vendoring Go dependencies
+	# echo Vendoring Go dependencies at $CC_SRC_PATH
+	# pushd $CC_SRC_PATH
+	# GO111MODULE=on go mod vendor
+	# popd
+	# echo Finished vendoring Go dependencies
 
 elif [ "$CC_SRC_LANGUAGE" = "java" ]; then
 	CC_RUNTIME_LANGUAGE=java
@@ -194,7 +194,7 @@ approveForMyOrg() {
 	ORG=$1
 	setGlobals $ORG
 	set -x
-	peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG} >&log.txt
+	peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.jwclab.com --tls --cafile $ORDERER_CA --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG} >&log.txt
 	res=$?
 	set +x
 	cat log.txt
@@ -247,7 +247,7 @@ commitChaincodeDefinition() {
 	# peer (if join was successful), let's supply it directly as we know
 	# it using the "-o" option
 	set -x
-	peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA --channelID $CHANNEL_NAME --name ${CC_NAME} $PEER_CONN_PARMS --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG} >&log.txt
+	peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.jwclab.com --tls --cafile $ORDERER_CA --channelID $CHANNEL_NAME --name ${CC_NAME} $PEER_CONN_PARMS --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG} >&log.txt
 	res=$?
 	set +x
 	cat log.txt
@@ -299,9 +299,22 @@ chaincodeInvokeInit() {
 	# peer (if join was successful), let's supply it directly as we know
 	# it using the "-o" option
 	set -x
-	fcn_call='{"function":"'${CC_INIT_FCN}'","Args":[]}'
+	fcn_call='{"function":"Instantiate","Args":[]}'
+	#fcn_call='{"function":"InitLedger","Args":[]}'
 	echo invoke fcn call:${fcn_call}
-	peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C $CHANNEL_NAME -n ${CC_NAME} $PEER_CONN_PARMS --isInit -c ${fcn_call} >&log.txt
+	peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.jwclab.com --tls --cafile $ORDERER_CA -C $CHANNEL_NAME -n ${CC_NAME} $PEER_CONN_PARMS -c ${fcn_call} >&log.txt
+	#peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.jwclab.com --tls --cafile ${PWD}/organizations/ordererOrganizations/jwclab.com/orderers/orderer.jwclab.com/msp/tlscacerts/tlsca.jwclab.com-cert.pem -C mychannel -n iot --peerAddresses localhost:7051 --tlsRootCertFiles ${PWD}/organizations/peerOrganizations/org1.jwclab.com/peers/peer0.org1.jwclab.com/tls/ca.crt --peerAddresses localhost:9051 --tlsRootCertFiles ${PWD}/organizations/peerOrganizations/org2.jwclab.com/peers/peer0.org2.jwclab.com/tls/ca.crt -c '{"function":"AddRecord","Args":["{\"id\":\"DANANG_1\", \"dateTime\":\"2020-11-02 15:04:05\", \"data\":{\"ph\":7, \"hum\":12, \"dust\":1, \"uv\":1, \"tem\":30}}"]}'
+	res=$?
+	set +x
+	cat log.txt
+	verifyResult $res "Invoke execution on $PEERS failed "
+	echo "===================== Invoke transaction successful on $PEERS on channel '$CHANNEL_NAME' ===================== "
+	echo
+}
+
+chaincodeInvoke() {
+	k=$1
+	peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.jwclab.com --tls --cafile ${PWD}/organizations/ordererOrganizations/jwclab.com/orderers/orderer.jwclab.com/msp/tlscacerts/tlsca.jwclab.com-cert.pem -C mychannel -n iot --peerAddresses localhost:7051 --tlsRootCertFiles ${PWD}/organizations/peerOrganizations/org1.jwclab.com/peers/peer0.org1.jwclab.com/tls/ca.crt --peerAddresses localhost:9051 --tlsRootCertFiles ${PWD}/organizations/peerOrganizations/org2.jwclab.com/peers/peer0.org2.jwclab.com/tls/ca.crt -c '{"function":"AddRecord","Args":["{\"id\":\"DANANG_1\", \"dateTime\":\"2020-11-02 15:04:05\", \"data\":{\"ph\":7, \"hum\":12, \"dust\":1, \"uv\":1, \"tem\":'$k'}}"]}'
 	res=$?
 	set +x
 	cat log.txt
@@ -322,7 +335,7 @@ chaincodeQuery() {
 		sleep $DELAY
 		echo "Attempting to Query peer0.org${ORG}, Retry after $DELAY seconds."
 		set -x
-		peer chaincode query -C $CHANNEL_NAME -n ${CC_NAME} -c '{"Args":["queryAllCars"]}' >&log.txt
+		peer chaincode query -C $CHANNEL_NAME -n ${CC_NAME} -c '{"function":"QueryRecord","Args":["DANANG_1"]}' >&log.txt
 		res=$?
 		set +x
 		let rc=$res
@@ -376,13 +389,25 @@ commitChaincodeDefinition 1 2
 queryCommitted 1
 queryCommitted 2
 
-## Invoke the chaincode - this does require that the chaincode have the 'initLedger'
-## method defined
-if [ "$CC_INIT_FCN" = "NA" ]; then
-	echo "===================== Chaincode initialization is not required ===================== "
-	echo
-else
-	chaincodeInvokeInit 1 2
-fi
+
+chaincodeInvokeInit 1 2
+
+# n=1
+# while [ $n -le 5 ]
+# do
+# 	chaincodeInvoke $n
+# 	chaincodeQuery 1
+# 	n=$(( n+1 ))
+# done
+
+
+# Invoke the chaincode - this does require that the chaincode have the 'initLedger'
+# method defined
+# if [ "$CC_INIT_FCN" = "NA" ]; then
+# 	echo "===================== Chaincode initialization is not required ===================== "
+# 	echo
+# else
+# 	chaincodeInvokeInit 1 2
+# fi
 
 exit 0
